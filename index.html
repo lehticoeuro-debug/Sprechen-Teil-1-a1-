@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Drei Türen</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Nunito:wght@500;700;800;900&display=swap">
+<style>
+/* Layout: game-show stage — wheel on top, three doors below; each door opens into its own practice room */
+:root{
+  --stage:#2d8cf0; --stage-2:#1f74d6; --panel:#175fb6; --ink:#ffffff; --muted:#e1efff;
+  --d1:#ffb627; --d2:#ff6f61; --d3:#2ec4b6; --wood:#3a2a1c; --line:#8cc4ff;
+  --ok:#7ee081;
+  --display:'Bungee','Arial Black',Impact,sans-serif;
+  --body:'Nunito','Segoe UI',system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:radial-gradient(ellipse at 50% -10%,#6bb6ff 0%,var(--stage) 60%) fixed,var(--stage);color:var(--ink);font-family:var(--body);font-size:16px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:18px 32px;box-sizing:border-box}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(1.7rem,5vw,2.6rem);text-align:center;margin:0;letter-spacing:.04em;text-wrap:balance}
+.sub{text-align:center;color:var(--muted);margin:.3rem 0 0;font-size:.95rem}
+button{font-family:var(--body);font-weight:800;cursor:pointer;border:0;color:inherit}
+button:focus-visible,.door:focus-visible{outline:3px solid #fff;outline-offset:3px}
+
+/* ---------- main screen ---------- */
+.wheel-zone{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:18px}
+.result{font-family:var(--display);font-size:clamp(1.3rem,4.5vw,1.9rem);min-height:1.3em;text-align:center;letter-spacing:.04em}
+.result.pop{animation:pop .6s ease-out}
+@keyframes pop{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+.digital{background:#0b1b3a;border:5px solid #fff;border-radius:22px;padding:clamp(14px,3vw,24px) clamp(18px,4vw,36px);display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 10px 0 #0a3f80,0 18px 30px rgba(0,0,0,.25);max-width:100%;box-sizing:border-box}
+.digital .digits{gap:0;align-items:center}
+.digital .dg{background:none;color:#fff;box-shadow:none;width:.66em;height:auto;font-size:clamp(3.6rem,15vw,7.5rem);line-height:1;text-shadow:0 0 18px #ffffff66}
+.digital .dg::before{display:none}
+.digital .sep{color:#fff;font-size:clamp(3.2rem,13vw,6.5rem);padding:0 .08em .12em;line-height:1;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:.2}}
+.digital .tag{font-size:.8rem;letter-spacing:.25em;color:#fff;font-weight:900;opacity:.7}
+.wheel-box{position:relative;width:min(340px,80vw);aspect-ratio:1;max-width:100%}
+.pointer{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:28px solid #fff;filter:drop-shadow(0 3px 4px rgba(0,0,0,.5));z-index:2}
+#wheel{width:100%;height:100%;transition:transform 3.2s cubic-bezier(.17,.67,.15,1);filter:drop-shadow(0 10px 22px rgba(0,0,0,.45))}
+#wheel text{font-family:var(--display);font-size:13px;fill:#1b1b2f}
+.spin{background:linear-gradient(#fff,#e7e3ff);color:#1b1b2f;font-family:var(--display);font-weight:400;font-size:1.15rem;padding:.75rem 2.2rem;border-radius:999px;box-shadow:0 6px 0 #8c86c7,0 10px 20px rgba(0,0,0,.4);letter-spacing:.05em}
+.spin:active{transform:translateY(4px);box-shadow:0 2px 0 #8c86c7}
+.spin:disabled{opacity:.6;cursor:default}
+
+
+/* ---------- game screens ---------- */
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.back{background:var(--panel);padding:.6rem 1.1rem;border-radius:999px;font-size:1rem;border:2px solid var(--line)}
+.topbar h2{font-family:var(--display);font-weight:400;font-size:clamp(1.1rem,3.6vw,1.6rem);margin:0;flex:1;min-width:0}
+.round{color:var(--muted);font-weight:800;font-variant-numeric:tabular-nums}
+.hint{color:var(--muted);margin:.4rem 0 0;font-size:.92rem}
+.stagebox{margin-top:16px;background:var(--stage-2);border:2px solid var(--line);border-radius:22px;padding:clamp(14px,3vw,26px);display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:center}
+
+.sentence{margin-top:18px;background:#fff;color:#1b1b2f;border-radius:16px;padding:16px 18px;font-size:clamp(1.15rem,3.6vw,1.6rem);font-weight:800;line-height:1.7;text-align:center}
+.slot{display:inline-block;min-width:5.5em;border-bottom:3px dashed #8c86c7;color:transparent;padding:0 .2em;transition:color .3s}
+.revealed .slot{color:var(--accent);border-bottom-color:var(--accent);min-width:0}
+.sol{margin-top:12px;background:var(--panel);border-radius:16px;padding:14px 18px;display:grid;gap:8px;overflow-wrap:anywhere}
+.sol .k{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:900}
+.sol .v{font-size:clamp(1.05rem,3.2vw,1.35rem);font-weight:800;color:#fff}
+.back-btn{background:transparent}
+.controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px}
+.btn{padding:.75rem 1.3rem;border-radius:14px;font-size:1.05rem;background:var(--panel);border:2px solid var(--line)}
+.btn.main{background:var(--accent);color:#1b1b2f;border-color:transparent;box-shadow:0 5px 0 rgba(0,0,0,.35)}
+.btn.main:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.btn:disabled{opacity:.5;cursor:default}
+
+.side{display:flex;flex-direction:column;align-items:center;gap:14px}
+.flip{min-width:9.5ch;text-align:center;font-family:var(--display);font-size:clamp(1.5rem,5vw,2.1rem);background:#fff;color:#1b1b2f;padding:.5rem 1rem;border-radius:12px;position:relative;box-shadow:0 6px 0 #b9b4e4}
+.flip::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:#1b1b2f22}
+.flip-cap{font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:900}
+.flip.tick{animation:tick .08s linear}
+@keyframes tick{50%{transform:scaleY(.86)}}
+.chip{background:var(--panel);border:2px solid var(--line);border-radius:999px;padding:.35rem .9rem;font-weight:800}
+
+/* digits */
+.digits{display:flex;gap:6px;align-items:flex-end;justify-content:center;flex-wrap:nowrap;max-width:100%}
+.dg{width:clamp(36px,10vw,64px);height:clamp(54px,15vw,92px);display:flex;align-items:center;justify-content:center;background:#fff;color:#1b1b2f;border-radius:10px;font-family:var(--display);font-size:clamp(1.6rem,7vw,3.2rem);font-variant-numeric:tabular-nums;box-shadow:0 5px 0 #b9b4e4;position:relative}
+.dg::before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:#1b1b2f1c}
+.sep{font-family:var(--display);font-size:clamp(1.6rem,7vw,3rem);line-height:1;color:var(--accent);padding-bottom:4px}
+.gap{width:clamp(8px,3vw,22px)}
+.card-id{background:linear-gradient(135deg,#e9edf7,#cfd8ee);color:#1b1b2f;border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;max-width:100%;box-sizing:border-box}
+.card-id .row{display:flex;justify-content:space-between;gap:12px;font-size:.78rem;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:#56607f}
+.card-id .dg{box-shadow:0 4px 0 #9aa5c6}
+
+.numstage{min-height:clamp(200px,38vh,360px);background:#ffffff26;border-color:#fff}
+.bignum{gap:clamp(5px,1.4vw,12px)}
+.bignum .dg{width:clamp(50px,14vw,120px);height:clamp(78px,21vw,175px);font-size:clamp(2.6rem,12vw,6.2rem);background:#fff;color:#0d4fa3;border-radius:16px;box-shadow:0 7px 0 #0a3f80,0 14px 26px rgba(0,0,0,.22)}
+.bignum .gap{width:clamp(10px,3.5vw,30px)}
+.card-id .digits{gap:clamp(2px,.8vw,6px)}
+.card-id .dg{width:clamp(23px,6.6vw,64px);height:clamp(40px,11vw,92px);font-size:clamp(1.2rem,5vw,3.2rem);border-radius:8px}
+.card-id .sep{font-size:clamp(1.2rem,5vw,3rem);color:#0d4fa3}
+.bignum .dg{width:clamp(40px,13vw,120px);font-size:clamp(2.2rem,11vw,6.2rem)}
+.btn,.back{min-height:48px}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overflow-x:hidden;user-select:none;-webkit-user-select:none}
+.sentence,.sol{user-select:text;-webkit-user-select:text}
+@media (max-width:420px){.stagebox{padding:10px;gap:14px}.card-id{padding:10px}.controls .btn{flex:1 1 42%;padding:.7rem .6rem}}
+@media (max-height:500px) and (orientation:landscape){.wheel-box{width:min(240px,55vh)}}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01s!important;animation:none!important}}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <!-- MAIN -->
+  <section id="home">
+    <h1>Drei Türen</h1>
+    <p class="sub">Drehen! Das Rad wählt die Tür. · Quay bánh xe để chọn cửa.</p>
+    <div class="wheel-zone">
+      <div class="wheel-box"><div class="pointer"></div><svg id="wheel" viewBox="0 0 200 200" aria-label="Glücksrad"></svg></div>
+      <button class="spin" id="spinBtn">Drehen!</button>
+    </div>
+  </section>
+
+  <!-- GAME 1 -->
+  <section id="g0" hidden style="--accent:var(--d1)">
+    <div class="topbar"><h2>Tür 1 · Termin</h2><span class="round" id="r0">Runde 1</span></div>
+    <p class="hint">Đọc thứ và giờ theo cách nói thông thường (inoffiziell), ví dụ 14:35 → fünf nach halb drei.</p>
+    <div class="stagebox">
+      <div class="side">
+        <span class="flip-cap">Wochentag</span>
+        <div class="flip" id="wday">Montag</div>
+      </div>
+      <div class="digital"><div class="digits" id="clockDigits"><div class="dg"></div><div class="dg"></div><span class="sep">:</span><div class="dg"></div><div class="dg"></div></div><span class="tag">24 H</span></div>
+    </div>
+    <div class="sentence" id="s0">Peter hat am <span class="slot" id="s0a">Montag</span> um <span class="slot" id="s0b">…</span> einen Termin.</div>
+    <div class="sol" id="sol0" hidden></div>
+    <div class="controls">
+      <button class="btn back-btn" data-back>← Zurück</button>
+      <button class="btn main" id="new0">🎲 Neu</button>
+      <button class="btn" id="show0">Lösung zeigen</button>
+      <button class="btn" id="say0">🔊 Anhören</button>
+      <button class="btn" id="slow0">🐢 Langsam</button>
+    </div>
+  </section>
+
+  <!-- GAME 2 -->
+  <section id="g1" hidden style="--accent:var(--d2)">
+    <div class="topbar"><h2>Tür 2 · Geburtstag</h2><span class="round" id="r1">Runde 1</span></div>
+    <p class="hint">Đọc ngày sinh của Peter bằng số thứ tự: am dritten …</p>
+    <div class="stagebox">
+      <div class="card-id">
+        <div class="row"><span>Name: Peter</span><span>Geburtsdatum</span></div>
+        <div class="digits" id="dateDigits"></div>
+      </div>
+    </div>
+    <div class="sentence" id="s1">Peter ist am <span class="slot" id="s1a">…</span> geboren.</div>
+    <div class="sol" id="sol1" hidden></div>
+    <div class="controls">
+      <button class="btn back-btn" data-back>← Zurück</button>
+      <button class="btn main" id="new1">🎲 Neu</button>
+      <button class="btn" id="show1">Lösung zeigen</button>
+      <button class="btn" id="say1">🔊 Anhören</button>
+      <button class="btn" id="slow1">🐢 Langsam</button>
+    </div>
+  </section>
+
+  <!-- GAME 3 -->
+  <section id="g2" hidden style="--accent:var(--d3)">
+    <div class="topbar"><h2>Tür 3 · Zahlen</h2><span class="round" id="r2">Runde 1</span></div>
+    <p class="hint">Đọc to con số. Số có 4 hoặc 5 chữ số.</p>
+    <div class="stagebox numstage"><div class="digits bignum" id="numDigits"></div></div>
+    <div class="sol" id="sol2" hidden></div>
+    <div class="controls">
+      <button class="btn back-btn" data-back>← Zurück</button>
+      <button class="btn main" id="new2">🎲 Neu</button>
+      <button class="btn" id="show2">Lösung zeigen</button>
+      <button class="btn" id="say2">🔊 Anhören</button>
+      <button class="btn" id="slow2">🐢 Langsam</button>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ===== German words ===== */
+const ONES=['null','eins','zwei','drei','vier','fünf','sechs','sieben','acht','neun','zehn','elf','zwölf','dreizehn','vierzehn','fünfzehn','sechzehn','siebzehn','achtzehn','neunzehn'];
+const TENS=['','','zwanzig','dreißig','vierzig','fünfzig','sechzig','siebzig','achtzig','neunzig'];
+function u100(n){if(n<20)return ONES[n];const u=n%10,t=Math.floor(n/10);return u?(u===1?'ein':ONES[u])+'und'+TENS[t]:TENS[t];}
+function u1000(n){const h=Math.floor(n/100),r=n%100;let s=h?(h===1?'einhundert':ONES[h]+'hundert'):'';if(r)s+=u100(r);return s;}
+function words(n){if(n===0)return 'null';const th=Math.floor(n/1000),r=n%1000;let s=th?(th===1?'eintausend':u1000(th)+'tausend'):'';if(r)s+=u1000(r);return s;}
+function yearWords(y){if(y>=1100&&y<2000){const r=y%100;return u100(Math.floor(y/100))+'hundert'+(r?u100(r):'');}return words(y);}
+function ordDat(d){const b=d===1?'ers':d===3?'drit':d===7?'sieb':d===8?'ach':d<20?words(d):words(d)+'s';return b+'ten';}
+const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+const DAYS=['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'];
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pad=n=>String(n).padStart(2,'0');
+
+/* ===== speech ===== */
+function speak(text,rate){
+  if(!('speechSynthesis' in window))return;
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(text);u.lang='de-DE';u.rate=rate;
+  const v=speechSynthesis.getVoices().find(v=>/^de/i.test(v.lang));if(v)u.voice=v;
+  speechSynthesis.speak(u);
+}
+if('speechSynthesis' in window)speechSynthesis.getVoices();
+
+/* ===== wheel ===== */
+const COLORS=['#ffb627','#ff6f61','#2ec4b6'],LABELS=['TERMIN','GEBURTSTAG','ZAHLEN'];
+const wheel=document.getElementById('wheel');
+(function drawWheel(){
+  const pt=(a,r)=>[100+r*Math.sin(a*Math.PI/180),100-r*Math.cos(a*Math.PI/180)];
+  let s='<circle cx="100" cy="100" r="98" fill="#fff"/>';
+  // 6 slices: each door twice, so the wheel looks lively
+  for(let i=0;i<6;i++){const k=i%3,a0=i*60,a1=a0+60,[x0,y0]=pt(a0,94),[x1,y1]=pt(a1,94);
+    s+=`<path d="M100 100 L${x0.toFixed(2)} ${y0.toFixed(2)} A94 94 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z" fill="${COLORS[k]}" stroke="#fff" stroke-width="2"/>`;
+    const [tx,ty]=pt(a0+30,62);
+    s+=`<text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${a0+30} ${tx.toFixed(1)} ${ty.toFixed(1)})">${k+1}</text>`;
+    const [lx,ly]=pt(a0+30,82);
+    s+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" style="font-size:7px" transform="rotate(${a0+30} ${lx.toFixed(1)} ${ly.toFixed(1)})">${LABELS[k]}</text>`;}
+  s+='<circle cx="100" cy="100" r="16" fill="#141a33" stroke="#fff" stroke-width="3"/><circle cx="100" cy="100" r="5" fill="#fff"/>';
+  wheel.innerHTML=s;
+})();
+let wheelRot=0,busy=false;
+const spinBtn=document.getElementById('spinBtn');
+spinBtn.onclick=()=>{
+  if(busy)return;busy=true;spinBtn.disabled=true;
+  const slice=rnd(0,5),k=slice%3,center=slice*60+30,jitter=rnd(-22,22);
+  const target=360-center+jitter, cur=((wheelRot%360)+360)%360;
+  wheelRot+=360*5+((target-cur+360)%360);
+  wheel.style.transform=`rotate(${wheelRot}deg)`;
+  setTimeout(()=>enterDoor(k),3250);
+};
+const resultEl=document.getElementById('result');
+function enterDoor(k){
+  show(k);busy=false;spinBtn.disabled=false;
+}
+function show(k){
+  document.getElementById('home').hidden=true;
+  [0,1,2].forEach(i=>document.getElementById('g'+i).hidden=i!==k);
+  window.scrollTo(0,0);
+  GAMES[k].next();
+}
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{
+  if('speechSynthesis' in window)speechSynthesis.cancel();
+  [0,1,2].forEach(i=>document.getElementById('g'+i).hidden=true);
+  document.getElementById('home').hidden=false;window.scrollTo(0,0);
+});
+
+const clockBox=document.getElementById('clockDigits');
+
+function informal(h,m){
+  const h12=h%12||12, nx=(h+1)%12||12, W=n=>n===1?'eins':words(n);
+  switch(m){
+    case 0: return (h12===1?'ein':words(h12))+' Uhr';
+    case 5: return 'fünf nach '+W(h12);
+    case 10: return 'zehn nach '+W(h12);
+    case 15: return 'Viertel nach '+W(h12);
+    case 20: return 'zwanzig nach '+W(h12)+' / zehn vor halb '+W(nx);
+    case 25: return 'fünf vor halb '+W(nx);
+    case 30: return 'halb '+W(nx);
+    case 35: return 'fünf nach halb '+W(nx);
+    case 40: return 'zwanzig vor '+W(nx)+' / zehn nach halb '+W(nx);
+    case 45: return 'Viertel vor '+W(nx);
+    case 50: return 'zehn vor '+W(nx);
+    case 55: return 'fünf vor '+W(nx);
+  }
+}
+function formal(h,m){return (h===1?'ein':words(h))+' Uhr'+(m?' '+words(m):'');}
+
+function flipCycle(el,list,final,ms,done){
+  let i=0;const t=setInterval(()=>{el.textContent=list[i++%list.length];el.classList.remove('tick');void el.offsetWidth;el.classList.add('tick');},80);
+  setTimeout(()=>{clearInterval(t);el.textContent=final;if(done)done();},ms);
+}
+function rollDigits(box,finalChars,ms){
+  const cells=[...box.querySelectorAll('.dg')];
+  const t=setInterval(()=>cells.forEach(c=>c.textContent=rnd(0,9)),60);
+  setTimeout(()=>{clearInterval(t);cells.forEach((c,i)=>c.textContent=finalChars[i]);},ms);
+}
+function confetti(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const c=document.createElement('canvas');c.className='confetti';document.body.appendChild(c);
+  const x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;
+  const P=Array.from({length:90},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.4,vy:2+Math.random()*3,vx:-1+Math.random()*2,r:Math.random()*6,s:4+Math.random()*5,col:COLORS[rnd(0,2)]}));
+  let f=0;(function loop(){x.clearRect(0,0,c.width,c.height);P.forEach(p=>{p.y+=p.vy;p.x+=p.vx;p.r+=.1;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.col;x.fillRect(-p.s/2,-p.s/2,p.s,p.s*1.6);x.restore();});
+    if(++f<110)requestAnimationFrame(loop);else c.remove();})();
+}
+function solHTML(rows){return rows.map(([k,v])=>`<div><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');}
+
+/* ===== GAME 1: Termin ===== */
+const G0={n:0,cur:null,
+  next(){
+    this.n++;document.getElementById('r0').textContent='Runde '+this.n;
+    const h=rnd(6,22),m=rnd(0,11)*5,d=rnd(0,6);this.cur={h,m,d};
+    document.getElementById('s0').classList.remove('revealed');document.getElementById('sol0').hidden=true;
+    document.getElementById('new0').disabled=true;
+    rollDigits(clockBox,(pad(h)+pad(m)).split(''),1400);
+    flipCycle(document.getElementById('wday'),DAYS,DAYS[d],1500,()=>{document.getElementById('new0').disabled=false;});
+    document.getElementById('s0a').textContent=DAYS[d];
+    document.getElementById('s0b').textContent=informal(h,m);
+  },
+  reveal(){const {h,m,d}=this.cur;
+    document.getElementById('s0').classList.add('revealed');
+    const sol=document.getElementById('sol0');
+    sol.innerHTML=solHTML([['Inoffiziell',`am ${DAYS[d]} um ${informal(h,m)}`]]);
+    sol.hidden=false;confetti();},
+  text(){const {h,m,d}=this.cur;return `Peter hat am ${DAYS[d]} um ${informal(h,m).replace(' / ',', oder: um ')} einen Termin.`;}
+};
+
+/* ===== GAME 2: Geburtstag ===== */
+const dateBox=document.getElementById('dateDigits');
+dateBox.innerHTML='<div class="dg"></div><div class="dg"></div><span class="sep">.</span><div class="dg"></div><div class="dg"></div><span class="sep">.</span><div class="dg"></div><div class="dg"></div><div class="dg"></div><div class="dg"></div>';
+const G1={n:0,cur:null,
+  next(){
+    this.n++;document.getElementById('r1').textContent='Runde '+this.n;
+    const y=rnd(1950,2024),mo=rnd(1,12),d=rnd(1,new Date(y,mo,0).getDate());this.cur={y,mo,d};
+    document.getElementById('s1').classList.remove('revealed');document.getElementById('sol1').hidden=true;
+    rollDigits(dateBox,(pad(d)+pad(mo)+y).split(''),1400);
+    document.getElementById('s1a').textContent=`${ordDat(d)} ${MONTHS[mo-1]} ${yearWords(y)}`;
+  },
+  reveal(){const {y,mo,d}=this.cur;
+    document.getElementById('s1').classList.add('revealed');
+    const sol=document.getElementById('sol1');
+    sol.innerHTML=solHTML([['Mit Monatsname',`am ${ordDat(d)} ${MONTHS[mo-1]} ${yearWords(y)}`],['Mit Zahl',`am ${ordDat(d)} ${ordDat(mo)} ${yearWords(y)}`],['Geschrieben',`am ${d}. ${MONTHS[mo-1]} ${y}`]]);
+    sol.hidden=false;confetti();},
+  text(){const {y,mo,d}=this.cur;return `Peter ist am ${ordDat(d)} ${MONTHS[mo-1]} ${yearWords(y)} geboren.`;}
+};
+
+/* ===== GAME 3: Zahlen ===== */
+const numBox=document.getElementById('numDigits');
+const G2={n:0,cur:null,
+  next(){
+    this.n++;document.getElementById('r2').textContent='Runde '+this.n;
+    const len=Math.random()<.5?4:5,n=rnd(10**(len-1),10**len-1);this.cur=n;
+    document.getElementById('sol2').hidden=true;
+    const s=String(n);let html='';
+    s.split('').forEach((_,i)=>{if(i===s.length-3)html+='<span class="gap"></span>';html+='<div class="dg"></div>';});
+    numBox.innerHTML=html;rollDigits(numBox,s.split(''),1300);
+  },
+  reveal(){const n=this.cur,sol=document.getElementById('sol2');
+    const th=Math.floor(n/1000),r=n%1000;
+    const parts=(th===1?'eintausend':u1000(th)+'tausend')+(r?' + '+u1000(r):'');
+    sol.innerHTML=solHTML([['Zahl',n.toLocaleString('de-DE')],['In Worten',words(n)],['Aufgeteilt',parts]]);
+    sol.hidden=false;confetti();},
+  text(){return words(this.cur);}
+};
+
+const GAMES=[G0,G1,G2];
+GAMES.forEach((g,i)=>{
+  document.getElementById('new'+i).onclick=()=>g.next();
+  document.getElementById('show'+i).onclick=()=>g.reveal();
+  document.getElementById('say'+i).onclick=()=>speak(g.text(),.95);
+  document.getElementById('slow'+i).onclick=()=>speak(g.text(),.6);
+});
+</script>
+
+</body>
+</html>
